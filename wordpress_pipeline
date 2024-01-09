@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+
+    environment {
+        WHM_USER = 'root'
+        REMOTE_DIRECTORY = '/home/ubuntu/'
+    }
+
+    stages {
+        stage('Cloning git repo to /home') {
+            steps {
+                script {
+                    // Clone the Git repository directly into the specified directory
+                    checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[url: 'https://github.com/faizanVox/wordpress_jenkins.git']], extensions: [[$class: 'RelativeTargetDirectory', relativeTargetDir: 'wordpress_jenkins']]])
+
+                    // Use rsync to move files, handling non-empty directories
+                    sh "rsync -a --exclude=.git * ${REMOTE_DIRECTORY}"
+                }
+            }
+        }
+    }
+    post {
+    always {
+      /* clean up our workspace */
+      deleteDir()
+      /* clean up tmp directory */
+      dir("${workspace}@tmp") {
+        deleteDir()
+      }
+      /* clean up script directory */
+      dir("${workspace}@script") {
+        deleteDir()
+      }
+    }
+  }
+}
